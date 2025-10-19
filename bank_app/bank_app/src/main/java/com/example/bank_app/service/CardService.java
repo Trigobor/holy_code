@@ -1,9 +1,11 @@
 package com.example.bank_app.service;
 
+import com.example.bank_app.ENUM.CardStatus;
 import com.example.bank_app.entity.Card;
 import com.example.bank_app.entity.User;
 import com.example.bank_app.repository.CardRepository;
 import com.example.bank_app.repository.UserRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +25,11 @@ public class CardService {
         return cardRepository.findAll();
     }
 
+    public Card getCardByCardNumber(String cardNumber) {
+        return cardRepository.getCardByCardNumber(cardNumber)
+                .orElseThrow(() -> new EntityNotFoundException("Card not found: " + cardNumber));
+    }
+
     public List<Card> getCardsByUserId(Long userId) {
         return cardRepository.findByUserId(userId);
     }
@@ -35,21 +42,21 @@ public class CardService {
         card.setCardNumber(generateUniqueCardNumber());
         card.setUser(user);
         card.setBalance(BigDecimal.ZERO);
-        card.setActive(true);
+        card.setStatus(CardStatus.ACTIVE);
         return cardRepository.save(card);
     }
 
     public Card blockCard(Long cardId) {
         Card card = cardRepository.findById(cardId)
                 .orElseThrow(() -> new RuntimeException("Card not found"));
-        card.setActive(false);
+        card.setStatus(CardStatus.BLOCKED);
         return cardRepository.save(card);
     }
 
     public Card unblockCard(Long cardId) {
         Card card = cardRepository.findById(cardId)
                 .orElseThrow(() -> new RuntimeException("Card not found"));
-        card.setActive(true);
+        card.setStatus(CardStatus.ACTIVE);
         return cardRepository.save(card);
     }
 
@@ -63,7 +70,7 @@ public class CardService {
         Card to = cardRepository.findById(toCardId)
                 .orElseThrow(() -> new RuntimeException("Target card not found"));
 
-        if (!from.isActive() || !to.isActive())
+        if (!(from.getStatus() == CardStatus.ACTIVE) || !(to.getStatus() == CardStatus.ACTIVE))
             throw new RuntimeException("One of the cards is blocked");
 
         if (from.getBalance().compareTo(amount) < 0)
@@ -76,8 +83,8 @@ public class CardService {
         cardRepository.save(to);
     }
 
-    public void deleteCard(Long id) {
-        cardRepository.deleteById(id);
+    public void deleteCard(String cardNumber) {
+        cardRepository.deleteCardByCardNumber(cardNumber);
     }
 
     private String generateCardNumber() {

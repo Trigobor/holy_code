@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: add-expiration-date-to-cards
+      author: nikita
+      changes:
+        - addColumn:
+            tableName: cards
+            columns:
+              - column:
+                  name: expiration_date
+                  type: DATE
+                  constraints:
+                    nullable: false

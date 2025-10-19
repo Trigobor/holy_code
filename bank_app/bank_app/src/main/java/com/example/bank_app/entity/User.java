@@ -1,5 +1,6 @@
 package com.example.bank_app.entity;
 
+import com.example.bank_app.ENUM.UserRole;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -17,6 +18,7 @@ public class User {
 
     private String username;
     private String password;
-    private String role;
+    @Enumerated(EnumType.STRING)
+    private UserRole role;
 }
 

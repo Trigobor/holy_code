@@ -29,10 +29,3 @@ databaseChangeLog:
                   name: balance
                   type: NUMERIC(15,2)
                   defaultValueNumeric: 0
-              - column:
-                  name: active
-                  type: boolean
-                  defaultValueBoolean: false
-                  constraints:
-                    nullable: false
-                    unique: false

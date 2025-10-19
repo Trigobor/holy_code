@@ -1,9 +1,11 @@
 package com.example.bank_app.entity;
 
+import com.example.bank_app.ENUM.CardStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.YearMonth;
 
 @Entity
 @Table(name = "cards")
@@ -25,5 +27,8 @@ public class Card {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    private boolean active;
+    @Enumerated(EnumType.STRING)
+    private CardStatus status;
+
+    private YearMonth expirationDate;
 }
