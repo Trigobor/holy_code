@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: add-card-holder-name-to-cards
+      author: nikita
+      changes:
+        - addColumn:
+            tableName: card_holder_name
+            columns:
+              - column:
+                  name: status
+                  type: varchar(255)
+                  constraints:
+                    nullable: false

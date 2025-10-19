@@ -3,26 +3,34 @@ package com.example.bank_app.service;
 import com.example.bank_app.ENUM.CardStatus;
 import com.example.bank_app.entity.Card;
 import com.example.bank_app.entity.User;
+import com.example.bank_app.exception.CardActiveException;
+import com.example.bank_app.exception.CardBlockedException;
+import com.example.bank_app.exception.CardExpiredException;
+import com.example.bank_app.exception.InvalidCardStatusException;
 import com.example.bank_app.repository.CardRepository;
 import com.example.bank_app.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.Random;
 
 @Service
 @RequiredArgsConstructor
 public class CardService {
+    private static final String CARD_EXPIRED_MESSAGE = "Card %s has expired";
 
     private final CardRepository cardRepository;
     private final UserRepository userRepository;
 
-    public List<Card> getAllCardsTotal() {
-        return cardRepository.findAll();
+    public Page<Card> getAllCardsTotal(Pageable pageable) {
+        return cardRepository.findAll(pageable);
     }
 
     public Card getCardByCardNumber(String cardNumber) {
@@ -34,30 +42,52 @@ public class CardService {
         return cardRepository.findByUserId(userId);
     }
 
-    public Card createCard(Long userId) {
+    public Card createCard(Long userId, String cardHolderName) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         Card card = new Card();
 
         card.setCardNumber(generateUniqueCardNumber());
+        card.setCardHolderName(cardHolderName);
         card.setUser(user);
         card.setBalance(BigDecimal.ZERO);
+        card.setExpirationDate(YearMonth.now().plusYears(5));
         card.setStatus(CardStatus.ACTIVE);
         return cardRepository.save(card);
     }
 
-    public Card blockCard(Long cardId) {
-        Card card = cardRepository.findById(cardId)
+    public Card blockCard(String cardNumber) {
+        Card card = cardRepository.findByCardNumber(cardNumber)
                 .orElseThrow(() -> new RuntimeException("Card not found"));
-        card.setStatus(CardStatus.BLOCKED);
-        return cardRepository.save(card);
+
+        validateCardNotExpired(card);
+
+        switch (card.getStatus()) {
+            case ACTIVE -> {
+                card.setStatus(CardStatus.BLOCKED);
+                return cardRepository.save(card);
+            }
+            case BLOCKED -> throw new CardBlockedException("Card already blocked");
+            case EXPIRED -> throw new CardExpiredException("Card has expired");
+            default -> throw new InvalidCardStatusException("Card cannot be blocked with status: " + card.getStatus());
+        }
     }
 
-    public Card unblockCard(Long cardId) {
-        Card card = cardRepository.findById(cardId)
+    public Card unblockCard(String cardNumber) {
+        Card card = cardRepository.findByCardNumber(cardNumber)
                 .orElseThrow(() -> new RuntimeException("Card not found"));
-        card.setStatus(CardStatus.ACTIVE);
-        return cardRepository.save(card);
+
+        validateCardNotExpired(card);
+
+        switch (card.getStatus()) {
+            case BLOCKED -> {
+                card.setStatus(CardStatus.ACTIVE);
+                return cardRepository.save(card);
+            }
+            case ACTIVE -> throw new CardActiveException("Card already active");
+            case EXPIRED -> throw new CardExpiredException("Card has expired");
+            default -> throw new InvalidCardStatusException("Card cannot be activated with status: " + card.getStatus());
+        }
     }
 
     @Transactional
@@ -104,5 +134,16 @@ public class CardService {
             cardNumber = generateCardNumber();
         } while (cardRepository.existsByCardNumber(cardNumber));
         return cardNumber;
+    }
+
+    private void validateCardNotExpired(Card card) {
+        YearMonth now = YearMonth.now();
+
+        if (card.getExpirationDate().isBefore(now)) {
+            card.setStatus(CardStatus.EXPIRED);
+            cardRepository.save(card);
+
+            throw new CardExpiredException(String.format(CARD_EXPIRED_MESSAGE, card.getCardNumber()));
+        }
     }
 }

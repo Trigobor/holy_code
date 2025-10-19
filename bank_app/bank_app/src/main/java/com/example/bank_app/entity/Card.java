@@ -30,5 +30,9 @@ public class Card {
     @Enumerated(EnumType.STRING)
     private CardStatus status;
 
+    @Column(name = "expiration_date")
     private YearMonth expirationDate;
+
+    @Column(name = "card_holder_name")
+    private String cardHolderName;
 }

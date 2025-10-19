@@ -1,6 +1,6 @@
 package com.example.bank_app.mapper;
 
-import com.example.bank_app.DTO.CreateCardRequestDTO;
+import com.example.bank_app.DTO.BlockUnblockCardResponseDTO;
 import com.example.bank_app.DTO.CreateCardResponseDTO;
 import com.example.bank_app.DTO.GetCardResponseDTO;
 import com.example.bank_app.entity.Card;
@@ -15,8 +15,11 @@ public class CardMapper {
 
     public static GetCardResponseDTO fromEntityToGetCardResponseDTO(Card card, boolean masked) {
         String number = masked ? maskCardNumber(card.getCardNumber()) : card.getCardNumber();
-        String cardHolderName = card.getUser().getUsername();
-        return new GetCardResponseDTO(number, card.getBalance(), card.getExpirationDate(), card.getStatus(), cardHolderName);
+        return new GetCardResponseDTO(number, card.getBalance(), card.getExpirationDate(), card.getStatus(), card.getCardHolderName());
+    }
+
+    public static BlockUnblockCardResponseDTO fromEntityToBlockUnblockCardResponseDTO(Card card, String status) {
+        return new BlockUnblockCardResponseDTO(maskCardNumber(card.getCardNumber()), status);
     }
 
     private static  String maskCardNumber(String cardNumber) {
