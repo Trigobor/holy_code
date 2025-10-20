@@ -3,18 +3,23 @@ package com.example.bank_app.mapper;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 
+import java.sql.Date;
 import java.time.YearMonth;
 
 @Converter(autoApply = true)
-public class YearMonthAttributeConverter implements AttributeConverter<YearMonth, String> {
+public class YearMonthAttributeConverter implements AttributeConverter<YearMonth, Date> {
 
     @Override
-    public String convertToDatabaseColumn(YearMonth attribute) {
-        return attribute != null ? attribute.toString() : null;
+    public Date convertToDatabaseColumn(YearMonth attribute) {
+        return attribute != null
+                ? Date.valueOf(attribute.atDay(1))
+                : null;
     }
 
     @Override
-    public YearMonth convertToEntityAttribute(String dbData) {
-        return dbData != null ? YearMonth.parse(dbData) : null;
+    public YearMonth convertToEntityAttribute(Date dbData) {
+        return dbData != null
+                ? YearMonth.from(dbData.toLocalDate())
+                : null;
     }
 }

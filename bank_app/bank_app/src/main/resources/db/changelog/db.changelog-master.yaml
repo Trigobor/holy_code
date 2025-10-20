@@ -9,3 +9,5 @@ databaseChangeLog:
       file: db/changelog/add-expiration-date-to-cards.yaml
   - include:
       file: db/changelog/add-card-holder-name-to-cards.yaml
+  - include:
+      file: db/changelog/add-block-request-to-cards.yaml

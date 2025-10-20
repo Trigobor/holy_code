@@ -1,10 +1,15 @@
 package com.example.bank_app.service;
 
+import com.example.bank_app.ENUM.UserRole;
 import com.example.bank_app.entity.User;
+import com.example.bank_app.exception.UserNotFoundException;
 import com.example.bank_app.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,34 +21,42 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
+    public Page<User> getAllUsers(Pageable pageable) {
+        return userRepository.findAll(pageable);
     }
 
     public Optional<User> getUserById(Long id) {
         return userRepository.findById(id);
     }
 
-    public User createUser(User user) {
-        // Пароль хэшируем
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
+    public User getUserByUsername(String username) {
+        return userRepository.findByUsername(username).orElseThrow(() -> new UserNotFoundException("There is no such user"));
+    }
+
+    @Transactional
+    public User createUser(String username, String password, UserRole role) {
+        User user = new User();
+        user.setUsername(username);
+        user.setRole(role);
+        user.setPassword(passwordEncoder.encode(password));
         return userRepository.save(user);
     }
 
-    public User updateUser(Long id, User updatedUser) {
-        return userRepository.findById(id)
+    @Transactional
+    public User updateUser(String username, UserRole role, String password) {
+        return userRepository.findByUsername(username)
                 .map(existing -> {
-                    existing.setUsername(updatedUser.getUsername());
-                    if (updatedUser.getPassword() != null && !updatedUser.getPassword().isEmpty()) {
-                        existing.setPassword(passwordEncoder.encode(updatedUser.getPassword()));
+                    if (password != null && !password.isEmpty()) {
+                        existing.setPassword(passwordEncoder.encode(password));
                     }
-                    existing.setRole(updatedUser.getRole());
+                    existing.setRole(role);
                     return userRepository.save(existing);
                 })
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
     }
 
-    public void deleteUser(Long id) {
-        userRepository.deleteById(id);
+    @Transactional
+    public void deleteUser(String username) {
+        userRepository.deleteByUsername(username);
     }
 }

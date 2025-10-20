@@ -3,10 +3,7 @@ package com.example.bank_app.service;
 import com.example.bank_app.ENUM.CardStatus;
 import com.example.bank_app.entity.Card;
 import com.example.bank_app.entity.User;
-import com.example.bank_app.exception.CardActiveException;
-import com.example.bank_app.exception.CardBlockedException;
-import com.example.bank_app.exception.CardExpiredException;
-import com.example.bank_app.exception.InvalidCardStatusException;
+import com.example.bank_app.exception.*;
 import com.example.bank_app.repository.CardRepository;
 import com.example.bank_app.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -17,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.net.UnknownServiceException;
 import java.time.YearMonth;
 import java.util.List;
 import java.util.Random;
@@ -33,18 +31,34 @@ public class CardService {
         return cardRepository.findAll(pageable);
     }
 
+    @Transactional
     public Card getCardByCardNumber(String cardNumber) {
-        return cardRepository.getCardByCardNumber(cardNumber)
+        Card result = cardRepository.getCardByCardNumber(cardNumber)
                 .orElseThrow(() -> new EntityNotFoundException("Card not found: " + cardNumber));
+        validateCardIfExpired(result);
+        return result;
     }
 
-    public List<Card> getCardsByUserId(Long userId) {
-        return cardRepository.findByUserId(userId);
+    @Transactional
+    public Card getCardByCardNumber(String cardNumber, Long userId) {
+        Card result = cardRepository.getCardByCardNumber(cardNumber)
+                .orElseThrow(() -> new EntityNotFoundException("Card not found: " + cardNumber));
+        validateCardIfExpired(result);
+
+        if (!result.getUser().getId().equals(userId))
+            throw new UserNotCardOwnerException("The user " + userId + " is not the owner of requested card");
+
+        return result;
     }
 
+    public Page<Card> getCardsByUserId(Long userId,  Pageable pageable) {
+        return cardRepository.findByUserId(userId, pageable);
+    }
+
+    @Transactional
     public Card createCard(Long userId, String cardHolderName) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
         Card card = new Card();
 
         card.setCardNumber(generateUniqueCardNumber());
@@ -56,11 +70,39 @@ public class CardService {
         return cardRepository.save(card);
     }
 
+    //без брокеров не придумал как лучше сделать функционал по запросу блокировки карты
+    @Transactional
+    public Card requestToBlockCard(Long userId, String cardNumber) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+        Card blockingCard = getCardByCardNumber(cardNumber);
+
+        if (!blockingCard.getUser().getId().equals(user.getId()))
+            throw new UserNotCardOwnerException("The user " + userId + " is not the owner of card " + blockingCard.getId());
+
+        if(!blockingCard.getStatus().equals(CardStatus.ACTIVE))
+            throw new InvalidCardStatusException("Card cannot be blocked with status: " + blockingCard.getStatus());
+
+        blockingCard.setStatus(CardStatus.BLOCKED);
+        return blockingCard;
+    }
+
+    public BigDecimal getBalance(String cardNumber, Long userId) {
+        Card card = cardRepository.getCardByCardNumber(cardNumber)
+                .orElseThrow(() -> new EntityNotFoundException("Card not found: " + cardNumber));
+        if (!card.getUser().getId().equals(userId))
+            throw new UserNotCardOwnerException("The user " + userId + " is not the owner of requested card");
+
+        return card.getBalance();
+    }
+
+    @Transactional
     public Card blockCard(String cardNumber) {
         Card card = cardRepository.findByCardNumber(cardNumber)
-                .orElseThrow(() -> new RuntimeException("Card not found"));
+                .orElseThrow(() -> new CardNotFoundException("Card not found"));
 
-        validateCardNotExpired(card);
+        if (validateCardIfExpired(card))
+            throw new CardExpiredException(String.format(CARD_EXPIRED_MESSAGE, card.getCardNumber()));
 
         switch (card.getStatus()) {
             case ACTIVE -> {
@@ -73,11 +115,13 @@ public class CardService {
         }
     }
 
+    @Transactional
     public Card unblockCard(String cardNumber) {
         Card card = cardRepository.findByCardNumber(cardNumber)
-                .orElseThrow(() -> new RuntimeException("Card not found"));
+                .orElseThrow(() -> new CardNotFoundException("Card not found"));
 
-        validateCardNotExpired(card);
+        if (validateCardIfExpired(card))
+            throw new CardExpiredException(String.format(CARD_EXPIRED_MESSAGE, card.getCardNumber()));
 
         switch (card.getStatus()) {
             case BLOCKED -> {
@@ -91,20 +135,31 @@ public class CardService {
     }
 
     @Transactional
-    public void transfer(Long fromCardId, Long toCardId, BigDecimal amount) {
+    public void transfer(String fromCardNumber, String toCardNumber, BigDecimal amount, Long userId) {
         if (amount.compareTo(BigDecimal.ZERO) <= 0)
             throw new IllegalArgumentException("Amount must be positive");
 
-        Card from = cardRepository.findById(fromCardId)
-                .orElseThrow(() -> new RuntimeException("Source card not found"));
-        Card to = cardRepository.findById(toCardId)
-                .orElseThrow(() -> new RuntimeException("Target card not found"));
+        Card from = cardRepository.getCardByCardNumber(fromCardNumber)
+                .orElseThrow(() -> new EntityNotFoundException("Card not found: " + fromCardNumber));
+        if (validateCardIfExpired(from))
+            throw new CardExpiredException(String.format(CARD_EXPIRED_MESSAGE, fromCardNumber));
 
-        if (!(from.getStatus() == CardStatus.ACTIVE) || !(to.getStatus() == CardStatus.ACTIVE))
-            throw new RuntimeException("One of the cards is blocked");
+        if (from.getStatus().equals(CardStatus.BLOCKED))
+            throw new CardBlockedException("Card " + fromCardNumber + " is blocked");
+
+        Card to = cardRepository.getCardByCardNumber(toCardNumber)
+                .orElseThrow(() -> new EntityNotFoundException("Card not found: " + toCardNumber));
+        if (validateCardIfExpired(to))
+            throw new CardExpiredException(String.format(CARD_EXPIRED_MESSAGE, toCardNumber));
+
+        if (!from.getUser().getId().equals(userId))
+            throw new UserNotCardOwnerException("The user " + userId + " is not the owner of card " + from.getId());
+
+        if (!to.getUser().getId().equals(userId))
+            throw new UserNotCardOwnerException("The user " + userId + " is not the owner of card " + to.getId());
 
         if (from.getBalance().compareTo(amount) < 0)
-            throw new RuntimeException("Not enough funds");
+            throw new BalanceException("Not enough funds");
 
         from.setBalance(from.getBalance().subtract(amount));
         to.setBalance(to.getBalance().add(amount));
@@ -113,6 +168,7 @@ public class CardService {
         cardRepository.save(to);
     }
 
+    @Transactional
     public void deleteCard(String cardNumber) {
         cardRepository.deleteCardByCardNumber(cardNumber);
     }
@@ -136,14 +192,15 @@ public class CardService {
         return cardNumber;
     }
 
-    private void validateCardNotExpired(Card card) {
+    //ПОБОЧНЫЙ ЭФФЕКТ - обновление статуса карты в БД
+    private boolean validateCardIfExpired(Card card) {
         YearMonth now = YearMonth.now();
 
         if (card.getExpirationDate().isBefore(now)) {
             card.setStatus(CardStatus.EXPIRED);
-            cardRepository.save(card);
-
-            throw new CardExpiredException(String.format(CARD_EXPIRED_MESSAGE, card.getCardNumber()));
+            cardRepository.saveAndFlush(card);
+            return true;
         }
+        return false;
     }
 }

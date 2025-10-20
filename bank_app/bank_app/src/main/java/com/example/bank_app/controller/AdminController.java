@@ -2,7 +2,9 @@ package com.example.bank_app.controller;
 
 import com.example.bank_app.DTO.*;
 import com.example.bank_app.entity.Card;
+import com.example.bank_app.entity.User;
 import com.example.bank_app.mapper.CardMapper;
+import com.example.bank_app.mapper.UserMapper;
 import com.example.bank_app.service.CardService;
 import com.example.bank_app.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +15,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import static com.example.bank_app.mapper.CardMapper.fromEntityToBlockUnblockCardResponseDTO;
+import static com.example.bank_app.mapper.UserMapper.fromEntityToUserDTO;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -42,7 +45,7 @@ public class AdminController {
         return cardsPage.map(card -> CardMapper.fromEntityToGetCardResponseDTO(card, masked));
     }
 
-    @PutMapping("/card/{cardNumber}")
+    @PutMapping("/cards/{cardNumber}/block")
     public BlockUnblockCardResponseDTO blockUnblockCard(@PathVariable String cardNumber,
                                                         @RequestParam String action) {
         if(action.equals("block")) {
@@ -64,6 +67,36 @@ public class AdminController {
     public void deleteCard(@RequestBody DeleteCardRequestDTO deleteCardRequestDTO) {
         cardService.deleteCard(deleteCardRequestDTO.cardNumber());
     }
+
+    @PostMapping("/users/create")
+    public UserDTO createUser(@RequestBody UserDTO userDTO) {
+        return fromEntityToUserDTO(userService.createUser(userDTO.username(),  userDTO.password(), userDTO.role()));
+    }
+
+    @GetMapping("/users")
+    public Page<UserDTO> getUsers(@RequestParam(defaultValue = "0") int page,
+                                  @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<User> usersPage = userService.getAllUsers(pageable);
+        return usersPage.map(UserMapper::fromEntityToUserDTO);
+    }
+
+    @GetMapping("users/{username}")
+    public UserDTO getUser(@PathVariable String username) {
+        return fromEntityToUserDTO(userService.getUserByUsername(username));
+    }
+
+    @PutMapping("users/{username}/update")
+    public UserDTO updateUser(@PathVariable String username,
+                              @RequestBody UserDTO userDTO) {
+        return fromEntityToUserDTO(userService.updateUser(username, userDTO.role(), userDTO.password()));
+    }
+
+    @DeleteMapping("users/{username}")
+    public void deleteUser(@PathVariable String username) {
+        userService.deleteUser(username);
+    }
+
 
 
 }

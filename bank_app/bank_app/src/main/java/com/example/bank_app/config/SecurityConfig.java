@@ -43,7 +43,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/login/**").permitAll() // для всех, временно разблочить, чтобы создать первого админа
                         .requestMatchers("/api/admin/**").hasRole("ADMIN") // для админов
-                        .requestMatchers("/api/user/**").hasRole("USER") // для юзеров
+                        .requestMatchers("/api/user/**").hasAnyRole("USER", "ADMIN") // для юзеров и админов
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)

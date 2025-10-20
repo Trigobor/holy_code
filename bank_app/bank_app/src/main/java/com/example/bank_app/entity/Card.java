@@ -35,4 +35,7 @@ public class Card {
 
     @Column(name = "card_holder_name")
     private String cardHolderName;
+
+    @Column(name = "block_request")
+    private boolean blockRequest;
 }

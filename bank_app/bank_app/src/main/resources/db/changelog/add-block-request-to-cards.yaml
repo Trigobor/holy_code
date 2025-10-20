@@ -1,13 +1,15 @@
 databaseChangeLog:
   - changeSet:
-      id: add-card-holder-name-to-cards
+      id: add-block-request-to-cards
       author: nikita
       changes:
         - addColumn:
             tableName: cards
             columns:
               - column:
-                  name: card_holder_name
-                  type: varchar(255)
+                  name: block_request
+                  type: boolean
+                  defaultValueBoolean: false
                   constraints:
+                    unique: false
                     nullable: false
