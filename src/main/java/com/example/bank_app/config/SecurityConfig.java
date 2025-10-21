@@ -41,6 +41,11 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/v3/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/swagger-resources/**",
+                                "/webjars/**").permitAll()
                         .requestMatchers("/api/auth/login/**").permitAll() // для всех, временно разблочить, чтобы создать первого админа
                         .requestMatchers("/api/admin/**").hasRole("ADMIN") // для админов
                         .requestMatchers("/api/user/**").hasAnyRole("USER", "ADMIN") // для юзеров и админов

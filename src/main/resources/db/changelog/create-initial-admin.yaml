@@ -1,0 +1,24 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-initial-admin
+      author: nikita
+      preConditions:
+        onFail: MARK_RAN
+        onError: MARK_RAN
+        preConditions:
+          - sqlCheck:
+              expectedResult: "0"
+              sql: SELECT COUNT(*) FROM users;
+      changes:
+        - insert:
+            tableName: users
+            columns:
+              - column:
+                  name: username
+                  value: "adminissander"
+              - column:
+                  name: password
+                  value: "$2a$10$tHgHZi2BUla6BBxFY41AceXc9DjspU6ilaXS5zcLlQlgSen.iBOb6"
+              - column:
+                  name: role
+                  value: "ADMIN"
