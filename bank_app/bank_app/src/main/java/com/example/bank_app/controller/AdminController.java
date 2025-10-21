@@ -47,7 +47,7 @@ public class AdminController {
 
     @PutMapping("/cards/{cardNumber}/block")
     public BlockUnblockCardResponseDTO blockUnblockCard(@PathVariable String cardNumber,
-                                                        @RequestParam String action) {
+                                                        @RequestParam(defaultValue = "block") String action) {
         if(action.equals("block")) {
             return fromEntityToBlockUnblockCardResponseDTO(cardService.blockCard(cardNumber), "Blocked");
         } else {

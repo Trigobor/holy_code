@@ -83,7 +83,7 @@ public class CardService {
         if(!blockingCard.getStatus().equals(CardStatus.ACTIVE))
             throw new InvalidCardStatusException("Card cannot be blocked with status: " + blockingCard.getStatus());
 
-        blockingCard.setStatus(CardStatus.BLOCKED);
+        blockingCard.setBlockRequest(true);
         return blockingCard;
     }
 

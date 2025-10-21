@@ -2,7 +2,9 @@ package com.example.bank_app.service;
 
 import com.example.bank_app.ENUM.UserRole;
 import com.example.bank_app.entity.User;
+import com.example.bank_app.exception.DuplicateUserNameException;
 import com.example.bank_app.exception.UserNotFoundException;
+import com.example.bank_app.repository.CardRepository;
 import com.example.bank_app.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -20,6 +22,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final CardRepository cardRepository;
 
     public Page<User> getAllUsers(Pageable pageable) {
         return userRepository.findAll(pageable);
@@ -35,6 +38,8 @@ public class UserService {
 
     @Transactional
     public User createUser(String username, String password, UserRole role) {
+        if (userRepository.existsByUsername(username))
+            throw new DuplicateUserNameException("Username already exists");
         User user = new User();
         user.setUsername(username);
         user.setRole(role);
@@ -55,8 +60,15 @@ public class UserService {
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
     }
 
+    // нужно бы разнести cardRepository.deleteAllByUserUsername(username); в сервис карт
+    // и выполнять удаление юзера через фасад, но у меня мало времени, чтобы переписать
     @Transactional
     public void deleteUser(String username) {
+        cardRepository.deleteAllByUserUsername(username);
         userRepository.deleteByUsername(username);
+    }
+
+    public boolean existsByUsername(String username) {
+        return userRepository.existsByUsername(username);
     }
 }

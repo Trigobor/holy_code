@@ -5,8 +5,11 @@ import com.example.bank_app.DTO.AuthResponseDTO;
 import com.example.bank_app.DTO.RegisterRequest;
 import com.example.bank_app.ENUM.UserRole;
 import com.example.bank_app.entity.User;
+import com.example.bank_app.exception.DuplicateUserNameException;
+import com.example.bank_app.exception.UserNotCardOwnerException;
 import com.example.bank_app.repository.UserRepository;
 import com.example.bank_app.security.JwtUtil;
+import com.example.bank_app.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +17,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -29,6 +33,7 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
+    private final UserService userService;
 
  /*
     @PostMapping("/register")
@@ -49,6 +54,8 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody AuthRequestDTO req) {
+        if (!userService.existsByUsername(req.username()))
+            throw new UserNotCardOwnerException("Username not found");
         UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(req.username(), req.password());
         Authentication auth = authenticationManager.authenticate(token);
         UserDetails ud = (UserDetails) auth.getPrincipal();
