@@ -1,11 +1,12 @@
 package com.example.bank_app.controller;
 
-import com.example.bank_app.dto.*;
+import com.example.bank_app.dto.BlockUnblockCardResponseDTO;
+import com.example.bank_app.dto.GetCardResponseDTO;
+import com.example.bank_app.dto.TransferRequestDTO;
 import com.example.bank_app.entity.Card;
 import com.example.bank_app.mapper.CardMapper;
 import com.example.bank_app.security.CustomUserDetails;
 import com.example.bank_app.service.CardService;
-import com.example.bank_app.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -24,7 +25,6 @@ import static com.example.bank_app.mapper.CardMapper.fromEntityToBlockUnblockCar
 @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
 @RequiredArgsConstructor
 public class UserController {
-    private final UserService userService;
     private final CardService cardService;
 
     @PatchMapping("/cards/{cardNumber}/block")

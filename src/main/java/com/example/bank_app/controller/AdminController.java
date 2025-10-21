@@ -48,7 +48,7 @@ public class AdminController {
     @PutMapping("/cards/{cardNumber}/block")
     public BlockUnblockCardResponseDTO blockUnblockCard(@PathVariable String cardNumber,
                                                         @RequestParam(defaultValue = "block") String action) {
-        if(action.equals("block")) {
+        if (action.equals("block")) {
             return fromEntityToBlockUnblockCardResponseDTO(cardService.blockCard(cardNumber), "Blocked");
         } else {
             return fromEntityToBlockUnblockCardResponseDTO(cardService.unblockCard(cardNumber), "Activated");
@@ -70,7 +70,7 @@ public class AdminController {
 
     @PostMapping("/users/create")
     public UserDTO createUser(@RequestBody UserDTO userDTO) {
-        return fromEntityToUserDTO(userService.createUser(userDTO.username(),  userDTO.password(), userDTO.role()));
+        return fromEntityToUserDTO(userService.createUser(userDTO.username(), userDTO.password(), userDTO.role()));
     }
 
     @GetMapping("/users")
@@ -96,7 +96,6 @@ public class AdminController {
     public void deleteUser(@PathVariable String username) {
         userService.deleteUser(username);
     }
-
 
 
 }
