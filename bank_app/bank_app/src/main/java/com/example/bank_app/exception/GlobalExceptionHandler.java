@@ -1,6 +1,6 @@
 package com.example.bank_app.exception;
 
-import com.example.bank_app.DTO.ApiError;
+import com.example.bank_app.dto.ApiError;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;

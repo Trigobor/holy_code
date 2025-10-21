@@ -1,8 +1,8 @@
 package com.example.bank_app.mapper;
 
-import com.example.bank_app.DTO.BlockUnblockCardResponseDTO;
-import com.example.bank_app.DTO.CreateCardResponseDTO;
-import com.example.bank_app.DTO.GetCardResponseDTO;
+import com.example.bank_app.dto.BlockUnblockCardResponseDTO;
+import com.example.bank_app.dto.CreateCardResponseDTO;
+import com.example.bank_app.dto.GetCardResponseDTO;
 import com.example.bank_app.entity.Card;
 
 public class CardMapper {

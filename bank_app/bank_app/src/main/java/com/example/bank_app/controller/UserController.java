@@ -1,9 +1,8 @@
 package com.example.bank_app.controller;
 
-import com.example.bank_app.DTO.*;
+import com.example.bank_app.dto.*;
 import com.example.bank_app.entity.Card;
 import com.example.bank_app.mapper.CardMapper;
-import com.example.bank_app.repository.UserRepository;
 import com.example.bank_app.security.CustomUserDetails;
 import com.example.bank_app.service.CardService;
 import com.example.bank_app.service.UserService;
@@ -57,7 +56,7 @@ public class UserController {
         return ResponseEntity.ok(cardService.getBalance(cardNumber, userDetails.getId()));
     }
 
-    @PostMapping("cards/transfer")
+    @PostMapping("/cards/transfer")
     public ResponseEntity<String> transfer(@AuthenticationPrincipal CustomUserDetails userDetails,
                                            @RequestBody TransferRequestDTO transferRequestDTO){
         cardService.transfer(transferRequestDTO.cardNumberFrom(), transferRequestDTO.cardNumberTo(), transferRequestDTO.amount(), userDetails.getId());

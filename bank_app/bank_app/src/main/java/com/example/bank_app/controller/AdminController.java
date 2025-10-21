@@ -1,6 +1,6 @@
 package com.example.bank_app.controller;
 
-import com.example.bank_app.DTO.*;
+import com.example.bank_app.dto.*;
 import com.example.bank_app.entity.Card;
 import com.example.bank_app.entity.User;
 import com.example.bank_app.mapper.CardMapper;

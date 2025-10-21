@@ -1,4 +1,4 @@
-package com.example.bank_app.DTO;
+package com.example.bank_app.dto;
 
 import com.example.bank_app.ENUM.CardStatus;
 

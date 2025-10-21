@@ -1,3 +1,3 @@
-package com.example.bank_app.DTO;
+package com.example.bank_app.dto;
 
 public record BlockUnblockCardRequestDTO(String cardNumber) { }
